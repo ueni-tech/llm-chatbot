@@ -2,22 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\UserMessageRequest;
 use Illuminate\Http\Request;
 use OpenAI;
 
 class ChatbotController extends Controller
 {
-    public function index()
+    public function index($conversationId = null)
     {
-        return view('index');
+        return view('index', compact('conversationId'));
     }
 
-  public function chat(Request $request)
+  public function chat(UserMessageRequest $request, $conversationId = null)
   {
-    $request->validate([
-      'message' => 'required|string',
-    ]);
-
     $client = OpenAI::client(config('services.openai.api_key'));
 
     $result = $client->chat()->create([
@@ -29,6 +26,8 @@ class ChatbotController extends Controller
 
     $response = $result['choices'][0]['message']['content'];
 
-    return view('index', compact('response'));
+    $conversationId = $request->conversation_id;
+
+    return view('index', compact('response', 'conversationId'));
   }
 }

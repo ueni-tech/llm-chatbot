@@ -34,12 +34,12 @@ class User extends Authenticatable
 
     public function conversations()
     {
-        return $this->hasMany(Conversations::class);
+        return $this->hasMany(Conversation::class);
     }
 
     public function messages()
     {
-        return $this->hasMany(Messages::class);
+        return $this->hasMany(Message::class);
     }
 
     /**
