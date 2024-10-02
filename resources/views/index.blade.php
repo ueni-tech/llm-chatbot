@@ -7,8 +7,8 @@
     <button type="submit" class="text-white bg-gray-500 rounded py-1 px-2">Send Message</button>
   </form>
 
-  @if(isset($response))
+  @if(session('response'))
   <h2>Response:</h2>
-  <p>{{ $response }}</p>
+  <p>{{ session('response') }}</p>
   @endif
 </x-app-layout>

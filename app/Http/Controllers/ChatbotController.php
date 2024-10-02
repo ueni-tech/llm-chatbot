@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UserMessageRequest;
+use App\Models\Conversation;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use OpenAI;
+
+use function Livewire\Volt\title;
 
 class ChatbotController extends Controller
 {
@@ -15,6 +19,17 @@ class ChatbotController extends Controller
 
   public function chat(UserMessageRequest $request, $conversationId = null)
   {
+    // conversationIdからConversationを取得
+    $conversation = Conversation::find($conversationId);
+    
+    // Conversationが存在しない場合は新規作成
+    if (!$conversation) {
+      $conversation = Conversation::create([
+        'user_id' => auth()->id(),
+        'title' => 'New Conversation',
+      ]);
+    }
+
     $client = OpenAI::client(config('services.openai.api_key'));
 
     $result = $client->chat()->create([
@@ -26,8 +41,6 @@ class ChatbotController extends Controller
 
     $response = $result['choices'][0]['message']['content'];
 
-    $conversationId = $request->conversation_id;
-
-    return view('index', compact('response', 'conversationId'));
+    return redirect()->route('chat.index', ['conversationId' => $conversation->id])->with('response', $response);
   }
 }
