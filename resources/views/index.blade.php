@@ -7,6 +7,15 @@
     <button type="submit" class="text-white bg-gray-500 rounded py-1 px-2">Send Message</button>
   </form>
 
+  @if($messages)
+  <h2>Messages:{{$title}}</h2>
+  <ul>
+    @foreach($messages as $message)
+    <li>{{ $message['role'] }}: {{ $message['content'] }}</li>
+    @endforeach
+  </ul>
+  @endif
+  
   @if(session('response'))
   <h2>Response:</h2>
   <p>{{ session('response') }}</p>
