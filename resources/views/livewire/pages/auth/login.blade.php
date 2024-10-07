@@ -17,7 +17,7 @@ $login = function () {
 
     Session::regenerate();
 
-    $this->redirectIntended(default: route('openai.index', absolute: false), navigate: true);
+    $this->redirectIntended(default: route('index', absolute: false), navigate: true);
 };
 
 ?>
