@@ -21,4 +21,19 @@ class Conversation extends Model
   {
     return $this->hasMany(Message::class);
   }
+
+  public function getMessageHistory()
+  {
+    return $this->messages()
+      ->orderBy('created_at', 'asc')
+      ->take(10)
+      ->get()
+      ->map(function ($message) {
+        return [
+          'role' => $message->role,
+          'content' => $message->content,
+        ];
+      })
+      ->toArray();
+  }
 }

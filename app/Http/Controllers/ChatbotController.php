@@ -19,10 +19,9 @@ class ChatbotController extends Controller
 
   public function chat(UserMessageRequest $request, $conversationId = null)
   {
-    // conversationIdからConversationを取得
+    // conversationの作成
     $conversation = Conversation::find($conversationId);
     
-    // Conversationが存在しない場合は新規作成
     if (!$conversation) {
       $conversation = Conversation::create([
         'user_id' => auth()->id(),
@@ -30,17 +29,47 @@ class ChatbotController extends Controller
       ]);
     }
 
+    // userからのmessageの作成
+    Message::create([
+      'user_id' => auth()->id(),
+      'conversation_id' => $conversation->id,
+      'content' => $request->message,
+      'role' => 'user',
+    ]);
+
     $client = OpenAI::client(config('services.openai.api_key'));
 
     $result = $client->chat()->create([
       'model' => 'gpt-3.5-turbo',
-      'messages' => [
-        ['role' => 'user', 'content' => $request->message],
-      ],
+      'messages' => $conversation->getMessageHistory(),
     ]);
 
-    $response = $result['choices'][0]['message']['content'];
+    $aiResponse = $result['choices'][0]['message']['content'];
 
-    return redirect()->route('chat.index', ['conversationId' => $conversation->id])->with('response', $response);
+    // aiからのmessageの作成
+    Message::create([
+      'user_id' => auth()->id(),
+      'conversation_id' => $conversation->id,
+      'content' => $aiResponse,
+      'role' => 'assistant',
+    ]);
+
+    // conversationのtitleを更新
+    if ($conversation->messages()->count() === 2){
+      $titleResponse = $client->chat()->create([
+        'model' => 'gpt-3.5-turbo',
+        'messages' => [
+          ['role' => 'system', 'content' => 'You are a helpful assistant that generates short, concise titles for conversations.'],
+          $conversation->getMessageHistory()[0],
+          $conversation->getMessageHistory()[1],
+          ['role' => 'user', 'content' => 'Please generate a short title for this conversation in Japanese.'],
+        ],
+        'max_tokens' => 60,
+      ]);
+      $title = $titleResponse['choices'][0]['message']['content'];
+      $conversation->update(['title' => trim($title)]);
+    } 
+
+    return redirect()->route('chat.index', ['conversationId' => $conversation->id])->with('response', $aiResponse);
   }
 }
