@@ -19,9 +19,11 @@ class ChatbotController extends Controller
       $conversation = Conversation::find($conversationId);
       $title = $conversation->title;
       $messages = $conversation->messages()->orderBy('created_at', 'asc')->get();
+
+      return view('index', compact('conversationId', 'title', 'messages'));
     }
 
-    return view('index', compact('conversationId', 'title', 'messages'));
+    return view('index', compact('conversationId', 'messages'));
   }
 
   public function chat(UserMessageRequest $request, $conversationId = null)
@@ -69,7 +71,7 @@ class ChatbotController extends Controller
           ['role' => 'system', 'content' => 'You are a helpful assistant that generates short, concise titles for conversations.'],
           $conversation->getMessageHistory()[0],
           $conversation->getMessageHistory()[1],
-          ['role' => 'user', 'content' => 'Please generate a short title for this conversation in Japanese.No quoting, etc. is required.'],
+          ['role' => 'user', 'content' => 'Please generate a short title for this conversation in Japanese.No quoting, only title text.'],
         ],
         'max_tokens' => 60,
       ]);
