@@ -4,81 +4,45 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UserMessageRequest;
 use App\Models\Conversation;
-use App\Models\Message;
-use Illuminate\Http\Request;
-use OpenAI;
-
-use function Livewire\Volt\title;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
+use OpenAI\Client;
 
 class ChatbotController extends Controller
 {
-  public function index($conversationId = null)
-  {
-    $messages = [];
-    if ($conversationId) {
-      $conversation = Conversation::find($conversationId);
-      $title = $conversation->title;
-      $messages = $conversation->messages()->orderBy('created_at', 'asc')->get();
+    private Client $openAiClient;
 
-      return view('index', compact('conversationId', 'title', 'messages'));
+    public function __construct(Client $openAiClient)
+    {
+        $this->openAiClient = $openAiClient;
     }
 
-    return view('index', compact('conversationId', 'messages'));
-  }
+    public function index(?int $conversationId = null): View
+    {
+        $conversation = $conversationId ? Conversation::findOrFail($conversationId) : null;
+        $messages = $conversation ? $conversation->messages()->orderBy('created_at', 'asc')->get() : [];
+        $title = $conversation?->title ?? '';
 
-  public function chat(UserMessageRequest $request, $conversationId = null)
-  {
-    // conversationの作成
-    $conversation = Conversation::find($conversationId);
-
-    if (!$conversation) {
-      $conversation = Conversation::create([
-        'user_id' => auth()->id(),
-        'title' => 'New Conversation',
-      ]);
+        return view('index', compact('conversationId', 'title', 'messages'));
     }
 
-    // userからのmessageの作成
-    Message::create([
-      'user_id' => auth()->id(),
-      'conversation_id' => $conversation->id,
-      'content' => $request->message,
-      'role' => 'user',
-    ]);
+    /**
+     * @param UserMessageRequest $request
+     * @param int|null $conversationId
+     * @return RedirectResponse
+     */
+    public function chat(UserMessageRequest $request, ?int $conversationId = null): RedirectResponse
+    {
+        $conversation = Conversation::findOrCreate($conversationId);
+        $conversation->addUserMessage($request->message);
 
-    $client = OpenAI::client(config('services.openai.api_key'));
+        $aiResponse = Conversation::getAiResponse($conversation, $this->openAiClient);
+        $conversation->addAssistantMessage($aiResponse);
 
-    $result = $client->chat()->create([
-      'model' => 'gpt-3.5-turbo',
-      'messages' => $conversation->getMessageHistory(),
-    ]);
+        if ($conversation->messages()->count() === 2) {
+            $conversation->updateTitle($this->openAiClient);
+        }
 
-    $aiResponse = $result['choices'][0]['message']['content'];
-
-    // aiからのmessageの作成
-    Message::create([
-      'user_id' => auth()->id(),
-      'conversation_id' => $conversation->id,
-      'content' => $aiResponse,
-      'role' => 'assistant',
-    ]);
-
-    // conversationのtitleを更新
-    if ($conversation->messages()->count() === 2) {
-      $titleResponse = $client->chat()->create([
-        'model' => 'gpt-3.5-turbo',
-        'messages' => [
-          ['role' => 'system', 'content' => 'You are a helpful assistant that generates short, concise titles for conversations.'],
-          $conversation->getMessageHistory()[0],
-          $conversation->getMessageHistory()[1],
-          ['role' => 'user', 'content' => 'Please generate a short title for this conversation in Japanese.No quoting, only title text.'],
-        ],
-        'max_tokens' => 60,
-      ]);
-      $title = $titleResponse['choices'][0]['message']['content'];
-      $conversation->update(['title' => trim($title)]);
+        return redirect()->route('chat.index', ['conversationId' => $conversation->id]);
     }
-
-    return redirect()->route('chat.index', ['conversationId' => $conversation->id]);
-  }
 }
