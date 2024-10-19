@@ -19,11 +19,12 @@ class ChatbotController extends Controller
 
     public function index(?int $conversationId = null): View
     {
+        $conversations = Conversation::where('user_id', auth()->id())->get();
         $conversation = $conversationId ? Conversation::findOrFail($conversationId) : null;
         $messages = $conversation ? $conversation->messages()->orderBy('created_at', 'asc')->get() : [];
         $title = $conversation?->title ?? '';
 
-        return view('index', compact('conversationId', 'title', 'messages'));
+        return view('index', compact('conversations', 'conversationId', 'title', 'messages'));
     }
 
     /**
