@@ -41,11 +41,10 @@ class Conversation extends Model
 
   /**
    * @param string $content
-   * @return Message
    */
-  public function addUserMessage(string $content): Message
+  public function addUserMessage(string $content)
   {
-    return $this->messages()->create([
+    $this->messages()->create([
       'user_id' => auth()->id(),
       'role' => 'user',
       'content' => $content,
