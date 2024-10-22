@@ -10,40 +10,47 @@ use OpenAI\Client;
 
 class ChatbotController extends Controller
 {
-    private Client $openAiClient;
+  private Client $openAiClient;
 
-    public function __construct(Client $openAiClient)
-    {
-        $this->openAiClient = $openAiClient;
+  public function __construct(Client $openAiClient)
+  {
+    $this->openAiClient = $openAiClient;
+  }
+
+  public function index(?string $conversationId = null): View
+  {
+    $conversations = Conversation::where('user_id', auth()->id())->get();
+
+    if ($conversationId) {
+      $conversation = Conversation::forUser(auth()->id())->findOrFail($conversationId);
+      $messages = $conversation->messages()->orderBy('created_at', 'asc')->get();
+      $title = $conversation->title;
+    } else {
+      $conversation = null;
+      $messages = [];
+      $title = '';
     }
 
-    public function index(?int $conversationId = null): View
-    {
-        $conversations = Conversation::where('user_id', auth()->id())->get();
-        $conversation = $conversationId ? Conversation::findOrFail($conversationId) : null;
-        $messages = $conversation ? $conversation->messages()->orderBy('created_at', 'asc')->get() : [];
-        $title = $conversation?->title ?? '';
+    return view('index', compact('conversations', 'conversationId', 'title', 'messages'));
+  }
 
-        return view('index', compact('conversations', 'conversationId', 'title', 'messages'));
+  /**
+   * @param UserMessageRequest $request
+   * @param int|null $conversationId
+   * @return RedirectResponse
+   */
+  public function chat(UserMessageRequest $request, ?string $conversationId = null): RedirectResponse
+  {
+    $conversation = Conversation::findOrCreate($conversationId);
+    $conversation->addUserMessage($request->message);
+
+    $aiResponse = Conversation::getAiResponse($conversation, $this->openAiClient);
+    $conversation->addAssistantMessage($aiResponse);
+
+    if ($conversation->messages()->count() === 2) {
+      $conversation->updateTitle($this->openAiClient);
     }
 
-    /**
-     * @param UserMessageRequest $request
-     * @param int|null $conversationId
-     * @return RedirectResponse
-     */
-    public function chat(UserMessageRequest $request, ?int $conversationId = null): RedirectResponse
-    {
-        $conversation = Conversation::findOrCreate($conversationId);
-        $conversation->addUserMessage($request->message);
-
-        $aiResponse = Conversation::getAiResponse($conversation, $this->openAiClient);
-        $conversation->addAssistantMessage($aiResponse);
-
-        if ($conversation->messages()->count() === 2) {
-            $conversation->updateTitle($this->openAiClient);
-        }
-
-        return redirect()->route('chat.index', ['conversationId' => $conversation->id]);
-    }
+    return redirect()->route('chat.index', ['conversationId' => $conversation->id]);
+  }
 }

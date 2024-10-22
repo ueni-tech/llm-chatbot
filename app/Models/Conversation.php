@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use OpenAI;
@@ -10,6 +12,8 @@ use OpenAI\Client;
 class Conversation extends Model
 {
   use HasFactory;
+
+  use HasUuids;
 
   protected $fillable = ['user_id', 'title'];
 
@@ -27,7 +31,7 @@ class Conversation extends Model
    * @param int|null $conversationId
    * @return Conversation
    */
-  public static function findOrCreate(?int $conversationId): self
+  public static function findOrCreate(?string $conversationId): self
   {
     $convasation = self::findOrNew($conversationId);
     if (!$convasation->exists) {
@@ -112,5 +116,10 @@ class Conversation extends Model
 
     $title = $titleResponse['choices'][0]['message']['content'];
     $this->update(['title' => trim($title)]);
+  }
+
+  public function scopeForUser(Builder $query, $userId): Builder
+  {
+    return $query->where('user_id', $userId);
   }
 }
