@@ -3,13 +3,14 @@
     <!-- サイドバー：会話リスト -->
     <div class="w-1/6 bg-gray-100 p-4">
       <h2 class="text-lg font-semibold mb-4">Conversations</h2>
-      <ul>
+      <a href="{{ route('chat.new') }}" class="text-white font-medium bg-yellow-500 rounded py-1 w-full block text-center">Start New Chat</a>
+      <ul class="mt-4">
         @foreach($conversations as $conversation)
-          <li class="mb-2">
-            <a href="{{ route('chat', $conversation->id) }}" class="text-blue-500 hover:underline">
-              {{ $conversation->title ?? 'Conversation ' . $conversation->id }}
-            </a>
-          </li>
+        <li class="mb-2">
+          <a href="{{ route('chat', $conversation->id) }}" class="text-blue-500 hover:underline">
+            {{ $conversation->title ?? 'Conversation ' . $conversation->id }}
+          </a>
+        </li>
         @endforeach
       </ul>
     </div>
@@ -25,19 +26,19 @@
       </form>
 
       @if($messages)
-        <h2 class="text-xl font-semibold mt-6 mb-2">Messages: {{ $title }}</h2>
-        <ul class="space-y-2">
-          @foreach($messages as $message)
-            <li class="p-2 {{ $message['role'] === 'user' ? 'bg-gray-100' : 'bg-blue-100' }} rounded">
-              <strong>{{ ucfirst($message['role']) }}:</strong> {{ $message['content'] }}
-            </li>
-          @endforeach
-        </ul>
+      <h2 class="text-xl font-semibold mt-6 mb-2">Messages: {{ $title }}</h2>
+      <ul class="space-y-2">
+        @foreach($messages as $message)
+        <li class="p-2 {{ $message['role'] === 'user' ? 'bg-gray-100' : 'bg-blue-100' }} rounded">
+          <strong>{{ ucfirst($message['role']) }}:</strong> {{ $message['content'] }}
+        </li>
+        @endforeach
+      </ul>
       @endif
-      
+
       @if(session('response'))
-        <h2 class="text-xl font-semibold mt-6 mb-2">Response:</h2>
-        <p class="p-2 bg-green-100 rounded">{{ session('response') }}</p>
+      <h2 class="text-xl font-semibold mt-6 mb-2">Response:</h2>
+      <p class="p-2 bg-green-100 rounded">{{ session('response') }}</p>
       @endif
     </div>
   </div>

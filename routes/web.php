@@ -15,6 +15,6 @@ Route::view('profile', 'profile')
 require __DIR__.'/auth.php';
 
 Route::get('/', [ChatbotController::class, 'index'])->middleware(['auth', 'verified'])->name('index');
+Route::get('/new', [ChatbotController::class, 'index'])->middleware(['auth', 'verified'])->name('chat.new');
 Route::get('/chat/{conversationId?}', [ChatbotController::class, 'index'])->middleware(['auth', 'verified'])->name('chat.index');
 Route::post('/chat/{conversationId?}', [ChatbotController::class, 'chat'])->middleware(['auth', 'verified'])->name('chat');
-
