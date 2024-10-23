@@ -3,7 +3,7 @@
     <!-- サイドバー：会話リスト -->
     <div class="w-1/6 bg-gray-100 p-4">
       <h2 class="text-lg font-semibold mb-4">Conversations</h2>
-      <a href="{{ route('chat.new') }}" class="text-white font-medium bg-yellow-500 rounded py-1 w-full block text-center">Start New Chat</a>
+      <a href="{{ route('chat.new') }}" class="text-white font-medium bg-primary rounded py-1 w-full block text-center">Start New Chat</a>
       <ul class="mt-4">
         @foreach($conversations as $conversation)
         <li class="mb-2">
